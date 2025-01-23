@@ -7,8 +7,7 @@ The BlueSky Block List Automator is a tool designed to help users manage and aut
 ## Features
 
 - **Automated Blocking**: Automatically block users based on predefined criteria.
-- **Batch Processing**: Add or remove multiple users from the block list at once.
-- **Customizable Rules**: Define custom rules for blocking users.
+- **Batch Processing**: Add multiple users from the block list at once.
 - **User-Friendly Interface**: Easy-to-use interface for managing block lists.
 
 ## Installation
