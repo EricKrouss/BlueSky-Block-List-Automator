@@ -45,7 +45,7 @@ To use the BlueSky Block List Automator, follow these steps:
 
 4. Update the list of keywords or hashtags you'd like to scan for in the 'Blocklist' tab.
 
-5. Run the main.py file.
+5. Press "Run Scan".
 
 ## License
 
