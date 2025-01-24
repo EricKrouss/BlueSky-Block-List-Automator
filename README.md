@@ -7,9 +7,10 @@ The BlueSky Block List Automator is a tool designed to help users manage and aut
 ## Features
 
 - **Automated Blocking**: Automatically block users based on predefined criteria.
-- **Batch Processing**: Add or remove multiple users from the block list at once.
-- **Customizable Rules**: Define custom rules for blocking users.
 - **User-Friendly Interface**: Easy-to-use interface for managing block lists.
+
+## Limitations
+- The main limitation is that it can only scan for 50-100 users at a time. While faster than manually blocking people, you may have to run it multiple times and are going to be limited by BlueSky's rate limits. 
 
 ## Installation
 
@@ -29,33 +30,21 @@ To install the BlueSky Block List Automator, follow these steps:
     pip install datetime
     ```
 
-## Usage
+## Usage & Configuration
 
 To use the BlueSky Block List Automator, follow these steps:
 
 1. Create and add an App Password 
 (https://bsky.app/settings/app-passwords).
 
-2. Input your username 
-(Example: username.bsky.social)
+2. Run the gui.py file.
 
-3. Under Blocklist URI, replace your account ID with your did:plc
- (Found here: https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=*YOURUSERNAME*.bsky.social) 
- and your List ID which is the last set of characters at the very end of your list URL. 
- (Example: https://bsky.app/profile/yourusername/lists/*LIST_ID*)
+3. Go to the 'Settings' tab, add your BlueSky Username, App password, and Block List URL and press 'Save Settings'. 
 
-4. Update the list of keywords or hashtags you'd like to scan for in the TARGET_HASHTAGS array.
+4. Update the list of keywords or hashtags you'd like to scan for in the 'Blocklist' tab.
 
 5. Run the main.py file.
-
-## Contributing
-
-We welcome contributions! Please read our [contributing guidelines](CONTRIBUTING.md) for more details.
 
 ## License
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for more information.
-
-## Contact
-
-For any questions or feedback, please contact us at support@blueskyblocklist.com.
