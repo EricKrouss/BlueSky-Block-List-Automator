@@ -33,6 +33,18 @@ To install the BlueSky Block List Automator, follow these steps:
     pip install requests
     pip install datetime
     ```
+4. Install Ollama at https://ollama.com/download
+
+5. Install/Run the following models by running the following command in a terminal:
+- Installing Deepseek-R1, which is used for reasoning when moderating.
+   ```sh
+    ollama run deepseek-r1:8b
+    ```
+- Installing Llava, which is used for describing image content to Deepseek-R1 for reasoning when moderating.
+    ```sh
+     ollama run llava:7b
+    ```
+
 
 ## Usage & Configuration
 
