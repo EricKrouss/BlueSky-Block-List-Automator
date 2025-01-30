@@ -342,7 +342,8 @@ def block_users_endpoint():
     try:
         access_token, session_did = main.get_session()
         main.SESSION_DID = session_did
-        blocked_count = block_users(access_token, data["userDids"])
+        # Pass session_did as the third argument
+        blocked_count = block_users(access_token, data["userDids"], session_did)
         return jsonify({"blockedCount": blocked_count})
     except Exception as e:
         logging.error(f"Error blocking users: {e}")
@@ -354,7 +355,8 @@ def unblock_all_endpoint():
     try:
         access_token, session_did = main.get_session()
         main.SESSION_DID = session_did
-        removed_count = remove_all_users_from_blocklist(access_token)
+        # Pass session_did as the second argument
+        removed_count = remove_all_users_from_blocklist(access_token, session_did)
         return jsonify({"removedCount": removed_count})
     except Exception as e:
         logging.error(f"Error unblocking all: {e}")

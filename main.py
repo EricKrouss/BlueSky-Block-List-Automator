@@ -183,7 +183,7 @@ def classify_content(text: Optional[str], image_description: Optional[str], keyw
 
 def validate_with_ollama(content: Optional[str], keyword: str, image_url: Optional[str] = None) -> Dict:
     """
-    Validate the post content and image to determine supportiveness of the keyword.
+    Validate the post content and image to determine supportiveness/if the user is in agreement with the idea and/or concept surrounding the keyword.
 
     Parameters:
         content (Optional[str]): The text content of the post.
@@ -236,7 +236,7 @@ def validate_with_ollama(content: Optional[str], keyword: str, image_url: Option
 
 def monitor_and_block(auth_token: str, session_did: str) -> List[str]:
     """
-    Monitor posts for target keywords, validate them, and identify supportive users.
+    Monitor posts for target keywords, validate them, and identify users who are supportive/in agreement with the ideas/concept of the keyword.
 
     Parameters:
         auth_token (str): Authentication token for API access.
@@ -315,40 +315,7 @@ def block_users(auth_token: str, user_dids: List[str], session_did: str) -> int:
 
 def remove_all_users_from_blocklist(auth_token: str, session_did: str) -> int:
     """Remove all users from the block list."""
-    url = f"{BASE_URL}/app.bsky.graph.getList"
-    headers = {"Authorization": f"Bearer {auth_token}"}
-    params = {"list": BLOCKLIST_URI}
-    try:
-        response = requests.get(url, headers=headers, params=params)
-        response.raise_for_status()
-        users = response.json().get("items", [])
-        if not users:
-            logging.info("The block list is already empty.")
-            return 0
-        removed_count = 0
-        for user in users:
-            user_did = user["subject"]
-            list_item_uri = user["uri"]
-            delete_url = f"{BASE_URL}/com.atproto.repo.deleteRecord"
-            delete_payload = {
-                "repo": session_did,
-                "collection": "app.bsky.graph.listitem",
-                "rkey": list_item_uri.split("/")[-1]
-            }
-            delete_response = requests.post(delete_url, headers=headers, json=delete_payload)
-            if delete_response.status_code == 200:
-                logging.info(f"Removed user {user_did} from the block list.")
-                removed_count += 1
-            else:
-                logging.error(f"Failed to remove user {user_did}: {delete_response.text}")
-        logging.info(f"Total removed users from block list: {removed_count}")
-        return removed_count
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error retrieving block list: {e}")
-        return 0
-    except (KeyError, ValueError) as e:
-        logging.error(f"Error parsing block list response: {e}")
-        return 0
+    ...
 
 if __name__ == "__main__":
     try:
