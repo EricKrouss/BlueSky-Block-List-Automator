@@ -1,10 +1,11 @@
-# BlueSky Block List Automator
-![image](https://github.com/user-attachments/assets/0baadc77-1d2e-4a5b-ae75-6fe5b39fd385)
+# Bluesky Shield
+![image](https://github.com/user-attachments/assets/9576baa5-81ff-45c2-9d8d-1caa2a58e59e)
+
 
 
 ## Overview
 
-The BlueSky Block List Automator is a tool designed to help users manage and automate their block lists on the BlueSky platform. This program allows users to easily add blocked users by scanning for specified terminology posted on BlueSky, ensuring a more controlled and customized online experience.
+Bluesky Shield is an AI powered block list automator designed to help users manage and automate their block lists on the BlueSky platform. This program allows users to easily add blocked users by scanning for specified terminology posted on Bluesky, and having AI reason over over the context of the post ensuring a more safe, controlled and customized online experience.
 
 ## Features
 
@@ -12,7 +13,8 @@ The BlueSky Block List Automator is a tool designed to help users manage and aut
 - **User-Friendly Interface**: Easy-to-use interface for managing block lists.
 
 ## Limitations
-- The main limitation is that it can only scan for 50-100 users at a time. While faster than manually blocking people, you may have to run it multiple times and are going to be limited by BlueSky's rate limits. 
+- The main limitation is that it can only scan for 50-100 users at a time. While faster than manually blocking people, you may have to run it multiple times and are going to be limited by Bluesky's rate limits.
+- The AI can trip up sometimes, so manual review for some items may still be required!
 
 ## Installation
 
@@ -31,6 +33,18 @@ To install the BlueSky Block List Automator, follow these steps:
     pip install requests
     pip install datetime
     ```
+4. Install Ollama at https://ollama.com/download
+
+5. Install/Run the following models by running the following command in a terminal:
+- Installing Deepseek-R1, which is used for reasoning when moderating.
+   ```sh
+    ollama run deepseek-r1:8b
+    ```
+- Installing Llava, which is used for describing image content to Deepseek-R1 for reasoning when moderating.
+    ```sh
+     ollama run llava:7b
+    ```
+
 
 ## Usage & Configuration
 
@@ -39,13 +53,15 @@ To use the BlueSky Block List Automator, follow these steps:
 1. Create and add an App Password 
 (https://bsky.app/settings/app-passwords).
 
-2. Run the gui.py file.
+2. Run the server.py file.
 
-3. Go to the 'Settings' tab, add your BlueSky Username, App password, and Block List URL and press 'Save Settings'. 
+3. Start an http server at the root directory of repository.
 
-4. Update the list of keywords or hashtags you'd like to scan for in the 'Blocklist' tab.
+4. Go to the 'Settings' tab, add your Bluesky Username, App password, and Block List URL and press 'Save Settings'. 
 
-5. Press "Run Scan".
+5. Update the list of keywords or hashtags you'd like to scan for in the 'Blocklist' tab.
+
+6. Press "Run Scan".
 
 ## License
 
