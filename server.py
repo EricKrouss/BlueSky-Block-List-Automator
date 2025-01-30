@@ -1,3 +1,5 @@
+# server.py
+
 from flask import Flask, request, jsonify
 import logging
 import re
@@ -17,6 +19,9 @@ from main import (
     validate_with_ollama
 )
 
+from flask_cors import CORS  # Import Flask-CORS
+
+
 # =============================================================================
 # LOGGING SETUP (same as before)
 # =============================================================================
@@ -30,6 +35,8 @@ root_logger.setLevel(logging.INFO)
 root_logger.addHandler(handler)
 
 app = Flask(__name__)
+CORS(app, resources={r"/api/*": {"origins": "http://localhost:5173"}})
+
 app.logger.handlers = []  # Remove default Flask logger handlers
 app.logger.propagate = True
 
