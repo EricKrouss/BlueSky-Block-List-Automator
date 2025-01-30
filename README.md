@@ -5,7 +5,7 @@
 
 ## Overview
 
-The BlueSky Block List Automator is a tool designed to help users manage and automate their block lists on the BlueSky platform. This program allows users to easily add blocked users by scanning for specified terminology posted on BlueSky, ensuring a more controlled and customized online experience.
+Bluesky Shield is an AI powered block list automator designed to help users manage and automate their block lists on the BlueSky platform. This program allows users to easily add blocked users by scanning for specified terminology posted on Bluesky, and having AI reason over over the context of the post ensuring a more safe, controlled and customized online experience.
 
 ## Features
 
