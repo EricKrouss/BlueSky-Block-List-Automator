@@ -103,12 +103,10 @@ sudo npm install -g http-server
 
 ## Starting the Application
 
-### Start the Backend Server:
+### Start the Backend Server by going to the project directory and running:
 ```sh
 python server.py
 ```
-
-**Note:** Ensure that the virtual environment is activated if you set one up earlier.
 
 ### Start the Frontend HTTP Server:
 In a new terminal window/tab, navigate to the project directory and run:
@@ -127,15 +125,6 @@ This project is licensed under the **MIT License**. See the `LICENSE` file for m
 
 ---
 
-## Additional Notes
-
-### Environment Variables:
-For enhanced security, especially for sensitive information like `APP_PASSWORD`, consider using environment variables instead of hardcoding them. Tools like [python-dotenv](https://pypi.org/project/python-dotenv/) can help manage environment variables.
-
-### Production Deployment:
-For deploying Bluesky Shield in a production environment, consider using:
-- A production-ready web server like **Gunicorn** for the Flask backend.
-- A more robust solution for serving the frontend.
 
 ### Contribution:
 Contributions are welcome! Please fork the repository and submit a pull request with your changes.
