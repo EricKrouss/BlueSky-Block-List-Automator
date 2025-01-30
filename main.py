@@ -2,6 +2,7 @@ import requests
 import datetime
 import re
 import logging
+import json
 from config import BASE_URL, APP_PASSWORD, USERNAME, BLOCKLIST_URI, TARGET_KEYWORDS
 
 # Configure logging
@@ -61,29 +62,204 @@ def add_user_to_blocklist(auth_token, user_did):
         logging.error(f"Failed to block user {user_did}: {response.text}")
         return False
 
+def validate_with_ollama(content, keyword, image_url=None):
+    """
+BlueSky Block List Moderator Instructions
+
+Purpose:
+Validate post content and images using Ollama to determine if they support the specified keyword. The AI model acts as a BlueSky Block List Moderator designed to block users who support the keyword in question while allowing criticism or reporting related to the keyword.
+
+Process:
+1. **Language Translation**:
+    - **Text Content**: Detect the language of the post content. If it's not in English, translate the text to English before any further processing.
+    - **Image Text**: Extract any text present within images. If the extracted text is not in English, translate it to English.
+
+2. **Image Description**:
+    - Use Llava:7b to generate a comprehensive description of the image content.
+
+3. **Content Classification**:
+    - **Unified Context Creation**:
+        - Combine the translated text content and the image description to create a unified context.
+    - **Classification**:
+        - Use Deepseek-R1:8b to classify the post based on the combined context.
+        - Determine the **intent** of the post:
+            - **Supportive**: The user explicitly supports the keyword or show some sort of positivity towards the keyword in a way opposite to the definition of Critical.
+            - **Critical**: The user criticizes, mocks, shows doubt, negativity or opposition towards the keyword.
+            - **Informative/Reporting**: The user reports on or discusses the keyword without expressing support or opposition.
+
+4. **Decision Making**:
+    - **Support Detection**:
+        - If the classification determines the user **supports** the keyword, mark the post for blocking.
+    - **Critical or Informative**:
+        - If the classification determines the user is **criticizing** or **reporting** on the keyword, do not flag the post.
+    - **Ambiguous Cases**:
+        - If the intent is unclear, perform a secondary analysis or flag for human review to prevent false positives.
+
+Roles and Responsibilities:
+- **BlueSky Block List Moderator**: The AI model is tasked with identifying and blocking users who express support for the specified keywords. This involves analyzing both textual and visual content to make informed decisions, while distinguishing between support, criticism, and neutral reporting to minimize false flagging.
+
+Parameters:
+    content (str): The text content of the post, translated to English if the original contents are written in a different language.
+    keyword (str): The keyword to evaluate support against.
+    image_url (str, optional): The URL of the image to evaluate.
+
+Returns:
+    dict: A dictionary containing:
+        - "is_supportive" (bool): True if the user supports the keyword, False otherwise.
+        - "reasoning" (str): Explanation for the classification decision including specific evidence from the content itself.
+        - "intent" (str): The detected intent of the post (e.g., "supportive", "critical", "informative").
+
+"""
+
+    # Ollama API endpoint
+    ollama_url = "http://localhost:11434/api/generate"  # Ensure Ollama is running on this endpoint
+
+    # Enhanced send_request function
+    def send_request(model, prompt):
+        payload = {
+            "model": model,
+            "prompt": prompt,
+            "temperature": 0.2,  # Lower temperature for more deterministic output
+            "top_p": 0.9,         # Slightly restrict sampling
+            "stream": False
+        }
+        try:
+            response = requests.post(ollama_url, json=payload, timeout=15)
+            response.raise_for_status()
+            # Extract the raw response text
+            raw_response = response.json().get("response", "").strip()
+            
+            # Use regex to extract JSON block between ```json and ```
+            json_match = re.search(r"```json\s*(\{.*?\})\s*```", raw_response, re.DOTALL)
+            if json_match:
+                json_text = json_match.group(1)
+                parsed = json.loads(json_text)
+                return parsed
+            else:
+                # Attempt to find any JSON object in the response
+                try:
+                    parsed = json.loads(raw_response)
+                    return parsed
+                except json.JSONDecodeError:
+                    logging.warning(f"Could not find JSON block in the response from model {model}: {raw_response}")
+                    return {"classification": "unknown", "reasoning": "Invalid JSON response."}
+        except requests.exceptions.RequestException as e:
+            logging.error(f"Error communicating with Ollama for model {model}: {e}")
+            return {"classification": "unknown", "reasoning": f"Request error: {e}"}
+        except json.JSONDecodeError:
+            logging.warning(f"Could not parse JSON response from model {model}: {raw_response}")
+            return {"classification": "unknown", "reasoning": "Invalid JSON response."}
+
+    # 1. If there's an image, describe it using Llava:7b
+    image_description = ""
+    if image_url:
+        image_prompt = (
+            f"You are an image description generator. Provide a detailed description of the image at the following URL:\n\n"
+            f"Image URL: {image_url}\n\n"
+            "Output *must* be a single descriptive paragraph about the image."
+        )
+        image_response = send_request("llava:7b", image_prompt)
+        if image_response.get("output"):
+            image_description = image_response["output"]
+            logging.info(f"Image description generated: {image_description}")
+        else:
+            logging.warning("Failed to generate image description.")
+            # Proceed without image description if generation fails
+
+    # 2. Construct the classification prompt for Deepseek-R1:8b
+    classification_prompt = (
+        f"You are a content moderator. Determine if the following post "
+        f"SUPPORTS the idea of '{keyword}'. Analyze both the text and the image description (if provided) "
+        f"to make your determination. Provide a reasoning for your classification.\n\n"
+        "Output *must* be valid JSON in the following format (and nothing else):\n"
+        "{\n"
+        '  "classification": "support" or "oppose",\n'
+        '  "reasoning": "explanation of why you think the post supports or opposes the keyword."\n'
+        "}\n\n"
+    )
+
+    if content:
+        classification_prompt += f"Text Content: {content}\n"
+    if image_description:
+        classification_prompt += f"Image Description: {image_description}\n"
+
+    # 3. Send classification request to Deepseek-R1:8b
+    classification_response = send_request("deepseek-r1:8b", classification_prompt)
+
+    # 4. Parse the classification and reasoning
+    classification = classification_response.get("classification", "").lower().strip()
+    reasoning = classification_response.get("reasoning", "").strip()
+
+    if classification not in {"support", "oppose"}:
+        logging.warning(f"Unexpected classification from Deepseek-R1: {classification}")
+        classification = "unknown"
+        reasoning = "Invalid classification returned."
+
+    # 5. Determine if the post is supportive
+    if classification == "support":
+        is_supportive = True
+    else:
+        # If classification is "oppose" or "unknown", consider the post as not supportive
+        is_supportive = False
+        # Set a specific reasoning message for ignored posts
+        if classification == "oppose":
+            reasoning = "Post does not support the keyword and will be ignored."
+        elif classification == "unknown":
+            reasoning = "Classification could not be determined confidently; post will be ignored."
+
+    return {"is_supportive": is_supportive, "reasoning": reasoning}
+
 def monitor_and_block(auth_token):
-    """Monitor posts for keywords and return detected users."""
+    """
+    Monitor posts for keywords and validate text and images with Ollama before blocking users.
+    Logs reasoning for each classification.
+    Returns a list of user DIDs that matched and are supportive of the target keywords.
+    """
     found_users = set()
 
     for keyword in TARGET_KEYWORDS:
         logging.info(f"Searching for keyword: {keyword}")
-        posts = search_posts(auth_token, keyword)
         
+        # Replace with your actual search logic
+        posts = search_posts(auth_token, keyword)
+
         for post in posts:
-            # Attempt to extract user DID and content
             user_did = post.get("author", {}).get("did")
             content = post.get("record", {}).get("text", post.get("content", ""))
-            
-            if not user_did or not content:
+            images = post.get("media", [])  # Assuming 'media' holds image URLs
+
+            if not user_did or (not content and not images):
                 logging.warning("Invalid post structure, skipping.")
                 continue
 
-            if keyword.lower() in content.lower():
-                logging.info(f"Keyword match found for '{keyword}' by user {user_did}")
+            # Validate text content
+            result = None
+            if content:
+                result = validate_with_ollama(content, keyword)
+                logging.info(
+                    f"Ollama reasoning for text by user {user_did}: {result['reasoning']}"
+                )
+
+            is_supportive = (result["is_supportive"] if result else False)
+            
+            # If the text isn't supportive, try images
+            if not is_supportive and images:
+                for image_url in images:
+                    img_result = validate_with_ollama(None, keyword, image_url=image_url)
+                    logging.info(
+                        f"Ollama reasoning for image {image_url} by user {user_did}: {img_result['reasoning']}"
+                    )
+                    if img_result["is_supportive"]:
+                        is_supportive = True
+                        break
+
+            if is_supportive:
+                logging.info(f"Validated match for '{keyword}' by user {user_did}")
                 found_users.add(user_did)
 
-    logging.info(f"Found {len(found_users)} users matching the keywords.")
+    logging.info(f"Found {len(found_users)} users matching the keywords and passing validation.")
     return list(found_users)
+
 
 def block_users(auth_token, user_dids):
     """Block a list of users and return the count of blocked users."""
